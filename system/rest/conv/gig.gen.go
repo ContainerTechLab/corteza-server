@@ -73,6 +73,8 @@ func (conv Gig) UnwrapPreprocessor(w ParamWrap) (out gig.Preprocessor, err error
 		return gig.PreprocessorAttachmentTransformParams(w.Params)
 	case gig.PreprocessorHandleExperimentalExport:
 		return gig.PreprocessorExperimentalExportParams(w.Params)
+	case gig.PreprocessorHandleUserExport:
+		return gig.PreprocessorUserExportParams(w.Params)
 	}
 
 	return nil, fmt.Errorf("unknown preprocessor: %s", w.Ref)

@@ -567,6 +567,46 @@ func UserActionDeleteAuthSessions(props ...*userActionProps) *userAction {
 	return a
 }
 
+// UserActionInitExport returns "system:user.initExport" action
+//
+// This function is auto-generated.
+//
+func UserActionInitExport(props ...*userActionProps) *userAction {
+	a := &userAction{
+		timestamp: time.Now(),
+		resource:  "system:user",
+		action:    "initExport",
+		log:       "initialized export",
+		severity:  actionlog.Notice,
+	}
+
+	if len(props) > 0 {
+		a.props = props[0]
+	}
+
+	return a
+}
+
+// UserActionRunExport returns "system:user.runExport" action
+//
+// This function is auto-generated.
+//
+func UserActionRunExport(props ...*userActionProps) *userAction {
+	a := &userAction{
+		timestamp: time.Now(),
+		resource:  "system:user",
+		action:    "runExport",
+		log:       "ran export",
+		severity:  actionlog.Notice,
+	}
+
+	if len(props) > 0 {
+		a.props = props[0]
+	}
+
+	return a
+}
+
 // *********************************************************************************************************************
 // *********************************************************************************************************************
 // Error constructors

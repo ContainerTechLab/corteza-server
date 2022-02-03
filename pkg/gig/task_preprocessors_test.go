@@ -29,3 +29,9 @@ func test_preprocessor_tasks_experimentalExport_constructor(t *testing.T, c cons
 
 	require.NoError(t, err)
 }
+
+func test_preprocessor_tasks_userExport_constructor(t *testing.T, c constructorPreprocessorUserExport) {
+	_, err := c(map[string]interface{}{})
+
+	require.NoError(t, err)
+}

@@ -670,6 +670,41 @@ endpoints:
           name: userID
           required: true
           title: ID
+
+  - name: exportInit
+    method: POST
+    title: Initialize user export
+    path: "/export"
+    parameters:
+      post:
+      - name: inclRoleMembership
+        type: bool
+        required: false
+        title: Include role membership
+      - name: inclRoles
+        type: bool
+        required: false
+        title: Include roles
+
+  - name: exportRun
+    method: GET
+    title: Run user export
+    path: "/export/{gigID}/{name}.{ext}"
+    parameters:
+      path:
+      - type: uint64
+        name: gigID
+        required: true
+        title: Gig ID
+      - type: string
+        name: name
+        required: true
+        title: Export file name
+      - type: string
+        name: ext
+        required: true
+        title: Export file extension
+
 - title: Applications
   path: "/application"
   entrypoint: application

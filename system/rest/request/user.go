@@ -279,6 +279,35 @@ type (
 		// ID
 		UserID uint64 `json:",string"`
 	}
+
+	UserExportInit struct {
+		// InclRoleMembership POST parameter
+		//
+		// Include role membership
+		InclRoleMembership bool
+
+		// InclRoles POST parameter
+		//
+		// Include roles
+		InclRoles bool
+	}
+
+	UserExportRun struct {
+		// GigID PATH parameter
+		//
+		// Gig ID
+		GigID uint64 `json:",string"`
+
+		// Name PATH parameter
+		//
+		// Export file name
+		Name string
+
+		// Ext PATH parameter
+		//
+		// Export file extension
+		Ext string
+	}
 )
 
 // NewUserList request
@@ -1387,6 +1416,150 @@ func (r *UserSessionsRemove) Fill(req *http.Request) (err error) {
 
 		val = chi.URLParam(req, "userID")
 		r.UserID, err = payload.ParseUint64(val), nil
+		if err != nil {
+			return err
+		}
+
+	}
+
+	return err
+}
+
+// NewUserExportInit request
+func NewUserExportInit() *UserExportInit {
+	return &UserExportInit{}
+}
+
+// Auditable returns all auditable/loggable parameters
+func (r UserExportInit) Auditable() map[string]interface{} {
+	return map[string]interface{}{
+		"inclRoleMembership": r.InclRoleMembership,
+		"inclRoles":          r.InclRoles,
+	}
+}
+
+// Auditable returns all auditable/loggable parameters
+func (r UserExportInit) GetInclRoleMembership() bool {
+	return r.InclRoleMembership
+}
+
+// Auditable returns all auditable/loggable parameters
+func (r UserExportInit) GetInclRoles() bool {
+	return r.InclRoles
+}
+
+// Fill processes request and fills internal variables
+func (r *UserExportInit) Fill(req *http.Request) (err error) {
+
+	if strings.HasPrefix(strings.ToLower(req.Header.Get("content-type")), "application/json") {
+		err = json.NewDecoder(req.Body).Decode(r)
+
+		switch {
+		case err == io.EOF:
+			err = nil
+		case err != nil:
+			return fmt.Errorf("error parsing http request body: %w", err)
+		}
+	}
+
+	{
+		// Caching 32MB to memory, the rest to disk
+		if err = req.ParseMultipartForm(32 << 20); err != nil && err != http.ErrNotMultipart {
+			return err
+		} else if err == nil {
+			// Multipart params
+
+			if val, ok := req.MultipartForm.Value["inclRoleMembership"]; ok && len(val) > 0 {
+				r.InclRoleMembership, err = payload.ParseBool(val[0]), nil
+				if err != nil {
+					return err
+				}
+			}
+
+			if val, ok := req.MultipartForm.Value["inclRoles"]; ok && len(val) > 0 {
+				r.InclRoles, err = payload.ParseBool(val[0]), nil
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	{
+		if err = req.ParseForm(); err != nil {
+			return err
+		}
+
+		// POST params
+
+		if val, ok := req.Form["inclRoleMembership"]; ok && len(val) > 0 {
+			r.InclRoleMembership, err = payload.ParseBool(val[0]), nil
+			if err != nil {
+				return err
+			}
+		}
+
+		if val, ok := req.Form["inclRoles"]; ok && len(val) > 0 {
+			r.InclRoles, err = payload.ParseBool(val[0]), nil
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+// NewUserExportRun request
+func NewUserExportRun() *UserExportRun {
+	return &UserExportRun{}
+}
+
+// Auditable returns all auditable/loggable parameters
+func (r UserExportRun) Auditable() map[string]interface{} {
+	return map[string]interface{}{
+		"gigID": r.GigID,
+		"name":  r.Name,
+		"ext":   r.Ext,
+	}
+}
+
+// Auditable returns all auditable/loggable parameters
+func (r UserExportRun) GetGigID() uint64 {
+	return r.GigID
+}
+
+// Auditable returns all auditable/loggable parameters
+func (r UserExportRun) GetName() string {
+	return r.Name
+}
+
+// Auditable returns all auditable/loggable parameters
+func (r UserExportRun) GetExt() string {
+	return r.Ext
+}
+
+// Fill processes request and fills internal variables
+func (r *UserExportRun) Fill(req *http.Request) (err error) {
+
+	{
+		var val string
+		// path params
+
+		val = chi.URLParam(req, "gigID")
+		r.GigID, err = payload.ParseUint64(val), nil
+		if err != nil {
+			return err
+		}
+
+		val = chi.URLParam(req, "name")
+		r.Name, err = val, nil
+		if err != nil {
+			return err
+		}
+
+		val = chi.URLParam(req, "ext")
+		r.Ext, err = val, nil
 		if err != nil {
 			return err
 		}

@@ -68,6 +68,12 @@ actions:
   - action: deleteAuthSessions
     log: "deleted auth sessions of {{user}}"
 
+  - action: initExport
+    log: "initialized export"
+
+  - action: runExport
+    log: "ran export"
+
 errors:
   - error: notFound
     message: "user not found"

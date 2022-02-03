@@ -30,6 +30,10 @@ type (
 		inclRoles        []string
 		inclTranslations bool
 	}
+	preprocessorUserExport struct {
+		inclRoleMembership bool
+		inclRoles          bool
+	}
 )
 
 const (
@@ -37,6 +41,7 @@ const (
 	PreprocessorHandleAttachmentRemove    = "attachmentRemove"
 	PreprocessorHandleAttachmentTransform = "attachmentTransform"
 	PreprocessorHandleExperimentalExport  = "experimentalExport"
+	PreprocessorHandleUserExport          = "userExport"
 )
 
 // ------------------------------------------------------------------------
@@ -339,6 +344,68 @@ func (t preprocessorExperimentalExport) Params() map[string]interface{} {
 	}
 }
 
+// PreprocessorUserExportParams returns a new preprocessorUserExport from the params
+func PreprocessorUserExportParams(params map[string]interface{}) (preprocessorUserExport, error) {
+	var (
+		out = preprocessorUserExport{}
+		err error
+	)
+
+	// Param validation
+	// - supported params
+	index := map[string]bool{
+		"inclRoleMembership": true,
+		"inclRoles":          true,
+	}
+	for p := range params {
+		if !index[p] {
+			return out, fmt.Errorf("unknown parameter provided to userExport: %s", p)
+		}
+	}
+
+	// Fill and check requirements
+	out.inclRoleMembership = cast.ToBool(params["inclRoleMembership"])
+	out.inclRoles = cast.ToBool(params["inclRoles"])
+	return out, err
+}
+
+// PreprocessorUserExportInclRoleMembership returns a new preprocessorUserExport from the required fields and inclRoleMembership
+func PreprocessorUserExportInclRoleMembership(inclRoleMembership bool) (preprocessorUserExport, error) {
+	var (
+		err error
+		out preprocessorUserExport
+	)
+	out = preprocessorUserExport{
+		inclRoleMembership: inclRoleMembership,
+	}
+
+	return out, err
+}
+
+// PreprocessorUserExportInclRoles returns a new preprocessorUserExport from the required fields and inclRoles
+func PreprocessorUserExportInclRoles(inclRoles bool) (preprocessorUserExport, error) {
+	var (
+		err error
+		out preprocessorUserExport
+	)
+	out = preprocessorUserExport{
+		inclRoles: inclRoles,
+	}
+
+	return out, err
+}
+
+func (t preprocessorUserExport) Ref() string {
+	return PreprocessorHandleUserExport
+}
+
+func (t preprocessorUserExport) Params() map[string]interface{} {
+	return map[string]interface{}{
+		"inclRoleMembership": t.inclRoleMembership,
+		"inclRoles":          t.inclRoles,
+	}
+}
+
 // ------------------------------------------------------------------------
 // Task registry
 
@@ -420,6 +487,23 @@ func preprocessorDefinitions() TaskDefSet {
 				},
 				{
 					Name:     "inclTranslations",
+					Kind:     "Bool",
+					Required: false,
+				},
+			},
+		},
+		{
+			Ref:         PreprocessorHandleUserExport,
+			Kind:        TaskPreprocessor,
+			Description: "Loads the system user resource from the store",
+			Params: []taskDefParam{
+				{
+					Name:     "inclRoleMembership",
+					Kind:     "Bool",
+					Required: false,
+				},
+				{
+					Name:     "inclRoles",
 					Kind:     "Bool",
 					Required: false,
 				},

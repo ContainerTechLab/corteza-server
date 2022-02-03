@@ -120,4 +120,17 @@ _exportPreprocessors: [
 			}
 		}
 	},
+
+	{
+		ident:       "userExport"
+		description: "Loads the system user resource from the store"
+		struct: {
+			inclRoleMembership: {
+				goType: "bool"
+			}
+			inclRoles: {
+				goType: "bool"
+			}
+		}
+	},
 ]

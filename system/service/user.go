@@ -13,6 +13,7 @@ import (
 	"github.com/cortezaproject/corteza-server/pkg/errors"
 	"github.com/cortezaproject/corteza-server/pkg/eventbus"
 	"github.com/cortezaproject/corteza-server/pkg/filter"
+	"github.com/cortezaproject/corteza-server/pkg/gig"
 	"github.com/cortezaproject/corteza-server/pkg/handle"
 	"github.com/cortezaproject/corteza-server/pkg/label"
 	"github.com/cortezaproject/corteza-server/store"
@@ -26,6 +27,11 @@ const (
 )
 
 type (
+	UserExportParams struct {
+		InclRoleMembership bool
+		InclRoles          bool
+	}
+
 	user struct {
 		actionlog actionlog.Recorder
 
@@ -37,6 +43,8 @@ type (
 		eventbus eventDispatcher
 
 		store store.Storer
+
+		gig gig.Service
 
 		opt UserOptions
 
@@ -92,10 +100,13 @@ type (
 
 		DeleteAuthTokensByUserID(ctx context.Context, userID uint64) (err error)
 		DeleteAuthSessionsByUserID(ctx context.Context, userID uint64) (err error)
+
+		InitExport(ctx context.Context, params UserExportParams) (gig.Gig, error)
+		RunExport(ctx context.Context, gigID uint64, name, ext string) (gig.SourceSet, error)
 	}
 )
 
-func User(opt UserOptions) *user {
+func User(opt UserOptions, g gig.Service) *user {
 	return &user{
 		eventbus: eventbus.Service(),
 		ac:       DefaultAccessControl,
@@ -103,6 +114,8 @@ func User(opt UserOptions) *user {
 		auth:     DefaultAuth,
 
 		store: DefaultStore,
+
+		gig: g,
 
 		actionlog: DefaultActionlog,
 
@@ -784,6 +797,136 @@ func (svc user) DeleteAuthTokensByUserID(ctx context.Context, userID uint64) (er
 	}()
 
 	return svc.recordAction(ctx, uaProps, UserActionDeleteAuthTokens, err)
+}
+
+func (svc user) InitExport(ctx context.Context, params UserExportParams) (out gig.Gig, err error) {
+	var (
+		uaProps = &userActionProps{}
+	)
+
+	err = func() (err error) {
+		if !svc.ac.CanSearchUsers(ctx) {
+			return UserErrNotAllowedToSearch()
+		}
+
+		p, err := gig.PreprocessorUserExportParams(map[string]interface{}{
+			"inclRoleMembership": params.InclRoleMembership,
+			"inclRoles":          params.InclRoles,
+		})
+		if err != nil {
+			return
+		}
+
+		w, err := initGigWorker(ctx, svc.store, gig.WorkerHandleExport)
+		if err != nil {
+			return
+		}
+
+		gig, err := svc.gig.Create(ctx, gig.UpdatePayload{
+			Worker:     w,
+			CompleteOn: gig.OnOutput,
+			Preprocess: gig.PreprocessorSet{p},
+		})
+		if err != nil {
+			return
+		}
+
+		gig, err = svc.gig.Prepare(ctx, gig)
+		if err != nil {
+			return
+		}
+
+		out = gig
+		return nil
+	}()
+
+	return out, svc.recordAction(ctx, uaProps, UserActionInitExport, err)
+}
+
+func (svc user) Export(ctx context.Context, params UserExportParams) (out gig.Gig, err error) {
+	var (
+		uaProps = &userActionProps{}
+	)
+
+	err = func() (err error) {
+		if !svc.ac.CanSearchUsers(ctx) {
+			return UserErrNotAllowedToSearch()
+		}
+
+		p, err := gig.PreprocessorUserExportParams(map[string]interface{}{
+			"inclRoleMembership": params.InclRoleMembership,
+			"inclRoles":          params.InclRoles,
+		})
+		if err != nil {
+			return
+		}
+
+		w, err := initGigWorker(ctx, svc.store, gig.WorkerHandleExport)
+		if err != nil {
+			return
+		}
+
+		gig, err := svc.gig.Create(ctx, gig.UpdatePayload{
+			Worker:     w,
+			CompleteOn: gig.OnOutput,
+			Preprocess: gig.PreprocessorSet{p},
+		})
+		if err != nil {
+			return
+		}
+
+		gig, err = svc.gig.Prepare(ctx, gig)
+		if err != nil {
+			return
+		}
+
+		out = gig
+		return nil
+	}()
+
+	return out, svc.recordAction(ctx, uaProps, UserActionInitExport, err)
+}
+
+func (svc user) RunExport(ctx context.Context, gigID uint64, name, ext string) (ss gig.SourceSet, err error) {
+	var (
+		uaProps = &userActionProps{}
+	)
+
+	err = func() (err error) {
+
+		p, err := gig.PostprocessorArchiveParams(map[string]interface{}{
+			"name":     name,
+			"encoding": ext,
+		})
+		if err != nil {
+			return
+		}
+
+		g, err := svc.gig.Read(ctx, gigID)
+		if err != nil {
+			return
+		}
+
+		g, err = svc.gig.SetPostprocessors(ctx, g, p)
+		if err != nil {
+			return
+		}
+
+		// @todo...
+		g, err = svc.gig.Exec(ctx, g)
+		if err != nil {
+			return
+		}
+
+		ss, g, err = svc.gig.OutputAll(ctx, g)
+		if err != nil {
+			return
+		}
+
+		return nil
+	}()
+
+	return ss, svc.recordAction(ctx, uaProps, UserActionRunExport, err)
 }
 
 // DeleteAuthSessionsByUserID will delete all auth session of user

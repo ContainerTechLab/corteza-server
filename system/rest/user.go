@@ -10,6 +10,7 @@ import (
 	"github.com/cortezaproject/corteza-server/pkg/corredor"
 	"github.com/cortezaproject/corteza-server/pkg/filter"
 	"github.com/cortezaproject/corteza-server/pkg/payload"
+	"github.com/cortezaproject/corteza-server/system/rest/conv"
 	"github.com/cortezaproject/corteza-server/system/rest/request"
 	"github.com/cortezaproject/corteza-server/system/service"
 	"github.com/cortezaproject/corteza-server/system/service/event"
@@ -24,6 +25,8 @@ type (
 	User struct {
 		user service.UserService
 		role service.RoleService
+
+		gigConv conv.Gig
 	}
 
 	userSetPayload struct {
@@ -36,6 +39,7 @@ func (User) New() *User {
 	ctrl := &User{}
 	ctrl.user = service.DefaultUser
 	ctrl.role = service.DefaultRole
+	ctrl.gigConv = conv.Gig{}
 	return ctrl
 }
 
@@ -254,6 +258,19 @@ func (ctrl *User) SessionsRemove(ctx context.Context, r *request.UserSessionsRem
 	}
 
 	return
+}
+
+func (ctrl *User) ExportInit(ctx context.Context, r *request.UserExportInit) (rsp interface{}, err error) {
+	g, err := ctrl.user.InitExport(ctx, service.UserExportParams{
+		InclRoleMembership: r.InclRoleMembership,
+		InclRoles:          r.InclRoles,
+	})
+	return makeGigPayload(ctx, ctrl.gigConv, &g, err)
+}
+
+func (ctrl *User) ExportRun(ctx context.Context, r *request.UserExportRun) (rsp interface{}, err error) {
+	ss, err := ctrl.user.RunExport(ctx, r.GigID, r.Name, r.Ext)
+	return serve(ctx, ss, err)
 }
 
 func (ctrl User) makeFilterPayload(ctx context.Context, uu types.UserSet, f types.UserFilter, err error) (*userSetPayload, error) {

@@ -36,6 +36,7 @@ type (
 
 		Prepare(context.Context, Gig) (Gig, error)
 		Exec(context.Context, Gig) (Gig, error)
+		ExecByID(context.Context, uint64) (Gig, error)
 		Output(context.Context, Gig) (SourceWrapSet, Gig, error)
 		OutputAll(context.Context, Gig) (SourceSet, Gig, error)
 		OutputSpecific(context.Context, Gig, uint64) (Source, Gig, error)
@@ -307,6 +308,15 @@ func (svc *service) Prepare(ctx context.Context, old Gig) (g Gig, err error) {
 
 	err = g.Worker.Preprocess(ctx, old.Preprocess...)
 	return
+}
+
+func (svc *service) ExecByID(ctx context.Context, gigID uint64) (g Gig, err error) {
+	g, err = getGig(ctx, gigID)
+	if err != nil {
+		return
+	}
+
+	return svc.Exec(ctx, g)
 }
 
 func (svc *service) Exec(ctx context.Context, old Gig) (g Gig, err error) {

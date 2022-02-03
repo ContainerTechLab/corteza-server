@@ -92,7 +92,7 @@ func (svc gigService) Create(ctx context.Context, worker string, pl gig.UpdatePa
 			return GigServiceErrNotAllowedToCreate()
 		}
 
-		pl.Worker, err = svc.initWorker(ctx, worker)
+		pl.Worker, err = initGigWorker(ctx, svc.store, worker)
 		if err != nil {
 			return err
 		}
@@ -597,12 +597,12 @@ func (svc gigService) Workers(ctx context.Context) (defs gig.WorkerDefSet) {
 	return svc.manager.Workers(ctx)
 }
 
-func (svc gigService) initWorker(ctx context.Context, name string) (w gig.Worker, err error) {
+func initGigWorker(ctx context.Context, s store.Storer, name string) (w gig.Worker, err error) {
 	switch strings.ToLower(name) {
 	case gig.WorkerHandleExport:
-		return gig.WorkerExport(svc.store), nil
+		return gig.WorkerExport(s), nil
 	case gig.WorkerHandleImport:
-		return gig.WorkerImport(svc.store), nil
+		return gig.WorkerImport(s), nil
 	case gig.WorkerHandleAttachment:
 		return nil, fmt.Errorf("worker not implemented: %s", name)
 	case gig.WorkerHandleNoop:

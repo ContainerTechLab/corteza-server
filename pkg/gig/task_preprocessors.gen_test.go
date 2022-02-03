@@ -16,6 +16,7 @@ type (
 	constructorPreprocessorAttachmentRemove    func(map[string]interface{}) (preprocessorAttachmentRemove, error)
 	constructorPreprocessorAttachmentTransform func(map[string]interface{}) (preprocessorAttachmentTransform, error)
 	constructorPreprocessorExperimentalExport  func(map[string]interface{}) (preprocessorExperimentalExport, error)
+	constructorPreprocessorUserExport          func(map[string]interface{}) (preprocessorUserExport, error)
 )
 
 func Test_preprocessor_tasks(t *testing.T) {
@@ -71,5 +72,17 @@ func Test_preprocessor_tasks(t *testing.T) {
 	t.Run("experimentalExport constructor", func(t *testing.T) {
 		// func test_preprocessor_tasks_experimentalExport_constructor(t *testing.T, c constructorPreprocessorExperimentalExport)
 		test_preprocessor_tasks_experimentalExport_constructor(t, PreprocessorExperimentalExportParams)
+	})
+
+	t.Run("userExport constructor unknown", func(t *testing.T) {
+		_, err := PreprocessorUserExportParams(map[string]interface{}{
+			"does not exist": "true",
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "unknown parameter")
+	})
+	t.Run("userExport constructor", func(t *testing.T) {
+		// func test_preprocessor_tasks_userExport_constructor(t *testing.T, c constructorPreprocessorUserExport)
+		test_preprocessor_tasks_userExport_constructor(t, PreprocessorUserExportParams)
 	})
 }

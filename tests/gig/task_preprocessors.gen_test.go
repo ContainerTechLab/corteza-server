@@ -73,6 +73,14 @@ func Test_preprocessor_tasks(t *testing.T) {
 
 		test_preprocessor_tasks_export_experimentalExport(ctx, t, h, svc, s, g, "export", "experimentalExport")
 	})
+	t.Run("userExport", func(_ *testing.T) {
+		g, err = svc.Create(ctx, gig.UpdatePayload{
+			Worker: test_preprocessor_tasks_worker_export(t, h, s),
+		})
+		h.a.NoError(err)
+
+		test_preprocessor_tasks_export_userExport(ctx, t, h, svc, s, g, "export", "userExport")
+	})
 	t.Run("noop", func(_ *testing.T) {
 		g, err = svc.Create(ctx, gig.UpdatePayload{
 			Worker: test_preprocessor_tasks_worker_export(t, h, s),

@@ -78,6 +78,8 @@ func (w *workerExport) Preprocess(ctx context.Context, tasks ...Preprocessor) (e
 		switch tc := t.(type) {
 		case preprocessorExperimentalExport:
 			err = w.experimentalExport(ctx, tc)
+		case preprocessorUserExport:
+			err = w.userExport(ctx, tc)
 		case preprocessorNoop:
 			err = w.noop(ctx, tc)
 		default:

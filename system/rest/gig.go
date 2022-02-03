@@ -76,7 +76,7 @@ func (Gig) New() *Gig {
 
 func (ctrl Gig) Create(ctx context.Context, r *request.GigCreate) (interface{}, error) {
 	g, err := ctrl.create(ctx, r.Worker, r.Preprocessors, r.Postprocessors, ctrl.parseCompletion(r.Completion))
-	return ctrl.makeGigPayload(ctx, g, err)
+	return makeGigPayload(ctx, ctrl.conv, g, err)
 }
 
 func (ctrl Gig) Go(ctx context.Context, r *request.GigGo) (interface{}, error) {
@@ -95,12 +95,12 @@ func (ctrl Gig) Go(ctx context.Context, r *request.GigGo) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ctrl.serve(ctx, out, err)
+	return serve(ctx, out, err)
 }
 
 func (ctrl Gig) Read(ctx context.Context, r *request.GigRead) (interface{}, error) {
 	g, err := ctrl.svc.Read(ctx, r.GigID)
-	return ctrl.makeGigPayload(ctx, g, err)
+	return makeGigPayload(ctx, ctrl.conv, g, err)
 }
 
 func (ctrl Gig) Update(ctx context.Context, r *request.GigUpdate) (interface{}, error) {
@@ -123,7 +123,7 @@ func (ctrl Gig) Update(ctx context.Context, r *request.GigUpdate) (interface{}, 
 		Preprocess:  pre,
 		Postprocess: post,
 	})
-	return ctrl.makeGigPayload(ctx, g, err)
+	return makeGigPayload(ctx, ctrl.conv, g, err)
 }
 
 func (ctrl Gig) Delete(ctx context.Context, r *request.GigDelete) (interface{}, error) {
@@ -139,7 +139,7 @@ func (ctrl Gig) AddSource(ctx context.Context, r *request.GigAddSource) (interfa
 	if err != nil {
 		return nil, err
 	}
-	src, err := ctrl.prepareSources(r.Upload, r.Uri)
+	src, err := prepareSources(r.Upload, r.Uri)
 	if err != nil {
 		return nil, err
 	}
@@ -148,12 +148,12 @@ func (ctrl Gig) AddSource(ctx context.Context, r *request.GigAddSource) (interfa
 		Decode:  decode,
 		Sources: src,
 	})
-	return ctrl.makeGigPayload(ctx, g, err)
+	return makeGigPayload(ctx, ctrl.conv, g, err)
 }
 
 func (ctrl Gig) RemoveSource(ctx context.Context, r *request.GigRemoveSource) (interface{}, error) {
 	g, err := ctrl.svc.RemoveSources(ctx, r.GigID, r.SourceID)
-	return ctrl.makeGigPayload(ctx, g, err)
+	return makeGigPayload(ctx, ctrl.conv, g, err)
 }
 
 func (ctrl Gig) Prepare(ctx context.Context, r *request.GigPrepare) (interface{}, error) {
@@ -166,7 +166,7 @@ func (ctrl Gig) Exec(ctx context.Context, r *request.GigExec) (interface{}, erro
 
 func (ctrl Gig) Output(ctx context.Context, r *request.GigOutput) (interface{}, error) {
 	out, err := ctrl.svc.Output(ctx, r.GigID)
-	return ctrl.makeSourceWrapSetPayload(ctx, out, err)
+	return makeSourceWrapSetPayload(ctx, out, err)
 }
 
 func (ctrl Gig) OutputAll(ctx context.Context, r *request.GigOutputAll) (interface{}, error) {
@@ -174,7 +174,7 @@ func (ctrl Gig) OutputAll(ctx context.Context, r *request.GigOutputAll) (interfa
 	if err != nil {
 		return nil, err
 	}
-	return ctrl.serve(ctx, out, err)
+	return serve(ctx, out, err)
 }
 
 func (ctrl Gig) OutputSpecific(ctx context.Context, r *request.GigOutputSpecific) (interface{}, error) {
@@ -182,7 +182,7 @@ func (ctrl Gig) OutputSpecific(ctx context.Context, r *request.GigOutputSpecific
 	if err != nil {
 		return nil, err
 	}
-	return ctrl.serve(ctx, gig.SourceSet{out}, err)
+	return serve(ctx, gig.SourceSet{out}, err)
 }
 
 func (ctrl Gig) State(ctx context.Context, r *request.GigState) (interface{}, error) {
@@ -207,7 +207,7 @@ func (ctrl Gig) Workers(ctx context.Context, r *request.GigWorkers) (interface{}
 
 // ...
 
-func (ctrl Gig) prepareSources(blob *multipart.FileHeader, uri string) (out gig.SourceWrapSet, err error) {
+func prepareSources(blob *multipart.FileHeader, uri string) (out gig.SourceWrapSet, err error) {
 	if blob != nil {
 		f, err := blob.Open()
 		if err != nil {
@@ -234,7 +234,7 @@ func (ctrl Gig) prepareSources(blob *multipart.FileHeader, uri string) (out gig.
 	return
 }
 
-func (ctrl Gig) makeGigPayload(ctx context.Context, g *gig.Gig, err error) (*gigPayload, error) {
+func makeGigPayload(ctx context.Context, cc conv.Gig, g *gig.Gig, err error) (*gigPayload, error) {
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +244,7 @@ func (ctrl Gig) makeGigPayload(ctx context.Context, g *gig.Gig, err error) (*gig
 		dd := src.Decoders()
 		decoders := make(conv.ParamWrapSet, len(dd))
 		for j, d := range dd {
-			decoders[j] = ctrl.conv.WrapDecoder(d)
+			decoders[j] = cc.WrapDecoder(d)
 			if err != nil {
 				return nil, err
 			}
@@ -261,7 +261,7 @@ func (ctrl Gig) makeGigPayload(ctx context.Context, g *gig.Gig, err error) (*gig
 
 	pre := make(conv.ParamWrapSet, len(g.Preprocess))
 	for i, t := range g.Preprocess {
-		pre[i] = ctrl.conv.WrapPreprocessor(t)
+		pre[i] = cc.WrapPreprocessor(t)
 		if err != nil {
 			return nil, err
 		}
@@ -269,7 +269,7 @@ func (ctrl Gig) makeGigPayload(ctx context.Context, g *gig.Gig, err error) (*gig
 
 	post := make(conv.ParamWrapSet, len(g.Postprocess))
 	for i, t := range g.Postprocess {
-		post[i] = ctrl.conv.WrapPostprocessor(t)
+		post[i] = cc.WrapPostprocessor(t)
 		if err != nil {
 			return nil, err
 		}
@@ -287,20 +287,20 @@ func (ctrl Gig) makeGigPayload(ctx context.Context, g *gig.Gig, err error) (*gig
 	}, nil
 }
 
-func (ctrl Gig) makeSourceWrapSetPayload(ctx context.Context, ss gig.SourceWrapSet, err error) (*gigSourceWrapSetPayload, error) {
+func makeSourceWrapSetPayload(ctx context.Context, ss gig.SourceWrapSet, err error) (*gigSourceWrapSetPayload, error) {
 	if err != nil {
 		return nil, err
 	}
 
 	out := &gigSourceWrapSetPayload{}
 	for _, s := range ss {
-		out.Set = append(out.Set, ctrl.makeSourceWrapPayload(ctx, s))
+		out.Set = append(out.Set, makeSourceWrapPayload(ctx, s))
 	}
 
 	return out, nil
 }
 
-func (ctrl Gig) makeSourceWrapPayload(ctx context.Context, s gig.SourceWrap) *gigSourceWrapPayload {
+func makeSourceWrapPayload(ctx context.Context, s gig.SourceWrap) *gigSourceWrapPayload {
 	return &gigSourceWrapPayload{
 		ID:       s.ID,
 		Name:     s.Name,
@@ -311,7 +311,7 @@ func (ctrl Gig) makeSourceWrapPayload(ctx context.Context, s gig.SourceWrap) *gi
 	}
 }
 
-func (ctrl Gig) serve(ctx context.Context, sources gig.SourceSet, err error) (interface{}, error) {
+func serve(ctx context.Context, sources gig.SourceSet, err error) (interface{}, error) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			// Simplify error handling for now

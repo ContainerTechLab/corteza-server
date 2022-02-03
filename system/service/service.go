@@ -164,14 +164,16 @@ func Initialize(ctx context.Context, log *zap.Logger, s store.Storer, ws websock
 
 	hcd.Add(objstore.Healthcheck(DefaultObjectStore), "ObjectStore/System")
 
+	gigSvc := gig.NewService(nil)
+
 	DefaultRenderer = Renderer(c.Template)
 	DefaultResourceTranslation = ResourceTranslation()
 	DefaultReport = Report(DefaultStore, DefaultAccessControl, DefaultActionlog, eventbus.Service())
-	DefaultGig = Gig(gig.NewService(nil))
+	DefaultGig = Gig(gigSvc)
 	DefaultAuthNotification = AuthNotification(CurrentSettings, DefaultRenderer, c.Auth)
 	DefaultAuth = Auth(AuthOptions{LimitUsers: c.Limit.SystemUsers})
 	DefaultAuthClient = AuthClient(DefaultStore, DefaultAccessControl, DefaultActionlog, eventbus.Service(), c.Auth)
-	DefaultUser = User(UserOptions{LimitUsers: c.Limit.SystemUsers})
+	DefaultUser = User(UserOptions{LimitUsers: c.Limit.SystemUsers}, gigSvc)
 	DefaultRole = Role()
 	DefaultApplication = Application(DefaultStore, DefaultAccessControl, DefaultActionlog, eventbus.Service())
 	DefaultReminder = Reminder(ctx, DefaultLogger.Named("reminder"), ws)

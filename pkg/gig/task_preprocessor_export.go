@@ -347,3 +347,23 @@ func (w *workerExport) pruneResTr(nn []resource.Interface) (mm []resource.Interf
 	}
 	return mm
 }
+
+func (w *workerExport) userExport(ctx context.Context, params preprocessorUserExport) error {
+	df := store.NewDecodeFilter()
+
+	// @todo...
+	df = df.
+		Users(&systemTypes.UserFilter{})
+
+	res, err := getStoreDecoders().Decode(ctx, w.store, df)
+	res = w.pruneResTr(res)
+	if err != nil {
+		return err
+	}
+
+	res = w.removeUnsupportedBits(res)
+
+	w.resources = append(w.resources, res...)
+	// w.resources = append(w.resources, rules...)
+	return nil
+}
