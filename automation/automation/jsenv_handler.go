@@ -39,6 +39,10 @@ func (h jsenvHandler) execute(ctx context.Context, args *jsenvExecuteArgs) (res 
 	var vv interface{}
 
 	switch a := args.Scope.(type) {
+	case *expr.Any:
+		vv = a.Get()
+	case *expr.KV:
+		vv = a.Get()
 	case *expr.KVV:
 		vv = a.Get()
 	case *expr.String:
