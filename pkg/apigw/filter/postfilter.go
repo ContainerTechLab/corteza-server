@@ -152,6 +152,13 @@ func (j *defaultJsonResponse) Merge(params []byte) (h types.Handler, err error) 
 
 func (j defaultJsonResponse) Handler() types.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) error {
+
+		// hit := agctx.ProfilerFromContext(r.Context())
+		// scope := agctx.ScopeFromContext(r.Context())
+
+		// spew.Dump("SCOPE KEYS", scope.Keys())
+		// spew.Dump("context of profiler in default json postfilter", hit)
+
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusAccepted)
 

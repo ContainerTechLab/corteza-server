@@ -2,9 +2,13 @@ package service
 
 import (
 	"context"
+	"encoding/base64"
+	"math"
+	"time"
 
 	"github.com/cortezaproject/corteza-server/pkg/actionlog"
 	"github.com/cortezaproject/corteza-server/pkg/apigw"
+	"github.com/cortezaproject/corteza-server/pkg/apigw/profiler"
 	a "github.com/cortezaproject/corteza-server/pkg/auth"
 
 	"github.com/cortezaproject/corteza-server/store"
@@ -252,4 +256,101 @@ func (svc *apigwRoute) Search(ctx context.Context, filter types.ApigwRouteFilter
 	}()
 
 	return r, f, svc.recordAction(ctx, aProps, ApigwRouteActionSearch, err)
+}
+
+func (svc *apigwRoute) Hits(ctx context.Context, filter types.ApigwProfilerFilter) (r types.ApigwProfilerAggregationSet, f types.ApigwProfilerFilter, err error) {
+
+	f = filter
+	// get a list of hits from profiler from apigw service
+
+	// types:
+	//  + list of hits, aggregated by endpoint (ie /parse/js)
+	//  - list of hits for a specific endpoint
+	//  - list of hits for a specific registered route
+	r = make([]*types.ApigwProfilerAggregation, 0)
+
+	// how to page
+	//  - afterTimestamp
+	//  - defaultpagesize = 10
+
+	uDec, _ := base64.URLEncoding.DecodeString(filter.Path)
+	filter.Path = string(uDec)
+
+	var (
+		list = apigw.Service().Profiler().Dump(profiler.Sort{
+			Path:   filter.Path,
+			Before: filter.Before,
+		})
+
+		tsum, tmin, tmax time.Duration
+		ssum, smin, smax int64
+		i                uint64 = 1
+	)
+
+	for p, v := range list {
+		tmin, tmax, tsum = time.Hour, 0, 0
+		smin, smax, ssum = math.MaxInt64, 0, 0
+
+		i = 0
+
+		for _, vv := range v {
+			var (
+				d = *vv.D
+				s = vv.R.ContentLength
+			)
+
+			if d < tmin {
+				tmin = d
+			}
+
+			if d > tmax {
+				tmax = d
+			}
+
+			if s < smin {
+				smin = s
+			}
+
+			if s > smax {
+				smax = s
+			}
+
+			tsum += d
+			ssum += s
+			i++
+		}
+
+		r = append(r, &types.ApigwProfilerAggregation{
+			Path:  p,
+			Count: i,
+			Tmin:  tmin.String(),
+			Tmax:  tmax.String(),
+			Tavg:  (time.Duration(int64(tsum.Seconds()/float64(i))) * time.Second).String(),
+			Smin:  smin,
+			Smax:  smax,
+			Savg:  float64(ssum) / float64(i),
+		})
+
+	}
+
+	// r = make(types.ApigwProfilerHitSet, 0)
+	// // cp := ""
+	// // var td, tmind, tmaxd, tavgd time.Duration
+	// var hh = &types.ApigwProfilerHit{}
+	// var i = 1
+
+	// for p, v := range list {
+	// 	// td = 1
+	// 	// if p != cp && cp != "" {
+
+	// 	// }
+
+	// 	hh.Request = *v.R
+	// 	hh.D = td.String()
+
+	// 	r = append(r, hh)
+	// 	i++
+	// }
+
+	return
 }

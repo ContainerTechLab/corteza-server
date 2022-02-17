@@ -1822,6 +1822,24 @@ endpoints:
     title: Proxy auth definitions
     path: "/proxy_auth/def"
 
+- title: API Gateway profiler
+  path: "/apigw/profiler"
+  entrypoint: apigwProfiler
+  authentication: []
+  imports:
+    - time
+  apis:
+  - name: list
+    method: GET
+    title: List hits
+    path: "/"
+    parameters:
+      get:
+      - { name: path,   type: "string",     title: "Filter by request path" }
+      - { name: before, type: "*time.Time", title: "Filter by request date" }
+      - { name: sort,   type: "string",     title: "Sort items"             }
+      - { name: limit,  type: "uint",       title: "Limit"                  }
+
 - title: Locale
   entrypoint: locale
   path: "/locale"

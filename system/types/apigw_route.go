@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/cortezaproject/corteza-server/pkg/filter"
+	h "github.com/cortezaproject/corteza-server/pkg/http"
 	"github.com/pkg/errors"
 )
 
@@ -24,6 +25,24 @@ type (
 		UpdatedBy uint64     `json:"updatedBy,string,omitempty" `
 		DeletedAt *time.Time `json:"deletedAt,omitempty"`
 		DeletedBy uint64     `json:"deletedBy,string,omitempty" `
+	}
+
+	ApigwProfilerHit struct {
+		Request h.Request  `json:"request"`
+		Ts      *time.Time `json:"time_start"`
+		Tf      *time.Time `json:"time_finish"`
+		D       string     `json:"time_duration"`
+	}
+
+	ApigwProfilerAggregation struct {
+		Path  string  `json:"path"`
+		Count uint64  `json:"count"`
+		Smin  int64   `json:"size_min"`
+		Smax  int64   `json:"size_max"`
+		Savg  float64 `json:"size_avg"`
+		Tmin  string  `json:"time_min"`
+		Tmax  string  `json:"time_max"`
+		Tavg  string  `json:"time_avg"`
 	}
 
 	ApigwRouteMeta struct {
@@ -46,6 +65,13 @@ type (
 
 		filter.Sorting
 		filter.Paging
+	}
+
+	ApigwProfilerFilter struct {
+		Path   string     `json:"path,omitempty"`
+		Before *time.Time `json:"before,omitempty"`
+
+		filter.Sorting
 	}
 )
 

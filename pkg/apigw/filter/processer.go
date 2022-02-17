@@ -15,6 +15,7 @@ import (
 	pe "github.com/cortezaproject/corteza-server/pkg/errors"
 	"github.com/cortezaproject/corteza-server/pkg/expr"
 	"github.com/cortezaproject/corteza-server/pkg/jsenv"
+	"github.com/davecgh/go-spew/spew"
 	"go.uber.org/zap"
 )
 
@@ -97,6 +98,7 @@ func (h workflow) Handler() types.HandlerFunc {
 			ctx   = r.Context()
 			scope = agctx.ScopeFromContext(ctx)
 		)
+		spew.Dump("SCOPE", scope.Keys())
 
 		// cleanup scope for wf
 		scp := filterScope(scope, "opts")
